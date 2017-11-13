@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"fmt"
+	"strconv"
 )
 
 func main() {
@@ -64,34 +65,59 @@ type CustomHandler struct {
 	serverIp net.IP
 }
 
-func (self CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
+func (c* CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 	for _, msg := range r.Question {
 		m := new(dns.Msg)
 		m.SetReply(r)
 		if msg.Name == "master." {
 			rr := &dns.A{
 				Hdr: dns.RR_Header{Name:msg.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 0},
-				A: self.serverIp,
+				A:   c.serverIp,
 			}
 			m.Answer = append(m.Answer, rr)
 
 		} else {
 			name := msg.Name[:len(msg.Name)-1]
-			record, e := self.client.HGetAll("record:" + name).Result()
-			if e == redis.Nil {
+			records, _ := c.client.Keys("record:*:" + name + ":*").Result()
+
+			if len(records) == 0 {
 				m.Rcode = dns.RcodeNameError
 				goto end
 			}
-			switch record["type"] {
-			case "A":
-				rr := &dns.A{
-					Hdr: dns.RR_Header{Name:msg.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 0},
-					A: net.ParseIP(record["host"]),
+			for i := 0; i < len(records); i++ {
+				recordKey := records[i]
+				record, e := c.client.HGetAll(recordKey).Result()
+				if e == redis.Nil {
+					panic("Invalid DNS state")
+					goto end
 				}
-				m.Answer = append(m.Answer, rr)
-			default:
-				m.Rcode = dns.RcodeNameError
-				goto end
+				switch record["type"] {
+				case "A":
+					rr := &dns.A{
+						Hdr: dns.RR_Header{Name:msg.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 0},
+						A: net.ParseIP(record["host"]),
+					}
+					m.Answer = append(m.Answer, rr)
+				case "CNAME":
+					rr := &dns.CNAME{
+						Hdr: dns.RR_Header{Name: msg.Name, Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 0},
+						Target: record["host"],
+					}
+					m.Answer = append(m.Answer, rr)
+				case "SRV":
+					port, _ := strconv.ParseInt(record["port"], 10, 32)
+					rr := &dns.SRV{
+						Hdr: dns.RR_Header{Name: msg.Name, Rrtype: dns.TypeSRV, Class: dns.ClassINET, Ttl: 0},
+						Target: record["host"],
+						Port: uint16(port),
+						Priority: 1,
+						Weight: 1,
+					}
+					m.Answer = append(m.Answer, rr)
+				default:
+					m.Rcode = dns.RcodeNameError
+					goto end
+				}
 			}
 		}
 		end:
