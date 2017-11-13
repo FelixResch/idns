@@ -61,12 +61,11 @@ func main() {
 }
 
 type CustomHandler struct {
-	dns.Handler
 	client *redis.Client
 	serverIp net.IP
 }
 
-func (c* CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
+func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 	for _, msg := range r.Question {
 		m := new(dns.Msg)
 		m.SetReply(r)
