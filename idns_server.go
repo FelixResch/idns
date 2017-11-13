@@ -31,7 +31,7 @@ func main() {
 	}
 
 	client := redis.NewClient(&redis.Options{
-		Addr: viper.GetString("redisArr"),
+		Addr: viper.GetString("redisAddr"),
 		Password: viper.GetString("redisPw"),
 		DB: viper.GetInt("redisDb"),
 	})
