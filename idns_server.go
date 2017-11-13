@@ -61,6 +61,7 @@ func main() {
 }
 
 type CustomHandler struct {
+	dns.Handler
 	client *redis.Client
 	serverIp net.IP
 }
