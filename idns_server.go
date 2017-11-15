@@ -38,6 +38,8 @@ func main() {
 
 	setting, err := client.Get("config:ip").Result()
 
+	log.Print("Read server ip ", setting, " from redis")
+
 	if err == redis.Nil {
 		setting = "172.16.0.1"
 		log.Print("Could not read config from redis")
