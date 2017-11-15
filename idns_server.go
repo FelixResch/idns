@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"fmt"
 	"strconv"
+	"math"
 )
 
 func main() {
@@ -113,7 +114,17 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 					}
 					m.Answer = append(m.Answer, rr)
 				case "SRV":
-					port, _ := strconv.ParseInt(record["port"], 10, 32)
+					port, e := strconv.ParseInt(record["port"], 10, 32)
+					if e != nil {
+						log.Fatal(e)
+						m.Rcode = dns.RcodeServerFailure
+						goto end
+					}
+					if port > math.MaxUint16 {
+						log.Fatal("Port ", port, " bigger than max port: ", math.MaxUint16)
+						m.Rcode = dns.RcodeServerFailure
+						goto end
+					}
 					rr := &dns.SRV{
 						Hdr: dns.RR_Header{Name: msg.Name, Rrtype: dns.TypeSRV, Class: dns.ClassINET, Ttl: 0},
 						Target: record["host"],
