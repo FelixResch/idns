@@ -156,6 +156,15 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 		}
 		log.Print("Sending ", m.String())
 		end:
-		w.WriteMsg(m)
+		err := w.WriteMsg(m)
+		if err != nil {
+			log.Println("Error detected, attempting to recover by sending an tcp error", err)
+			m.Answer = make([]dns.RR, 0)
+			m.Rcode = dns.RcodeServerFailure
+			err = w.WriteMsg(m)
+			if err != nil {
+				log.Print(err)
+			}
+		}
 	}
 }
