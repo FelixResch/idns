@@ -67,6 +67,7 @@ type CustomHandler struct {
 
 func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 	for _, msg := range r.Question {
+		log.Print("Received query for ", msg.Name, " of type ", msg.Qtype, "(", msg.Qclass, ")")
 		m := new(dns.Msg)
 		m.SetReply(r)
 		if msg.Name == "master." {
