@@ -125,9 +125,13 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 						m.Rcode = dns.RcodeServerFailure
 						goto end
 					}
+					host := record["host"]
+					if host[len(host) -1] != '.' {
+						host = host + "."
+					}
 					rr := &dns.SRV{
 						Hdr: dns.RR_Header{Name: msg.Name, Rrtype: dns.TypeSRV, Class: dns.ClassINET, Ttl: 0},
-						Target: record["host"],
+						Target: host,
 						Port: uint16(port),
 						Priority: 1,
 						Weight: 1,
