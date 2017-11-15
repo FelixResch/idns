@@ -133,7 +133,7 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 						Weight: 1,
 					}
 					m.Answer = append(m.Answer, rr)
-					keys, _ := c.client.Keys("record:*:" + record["host"] + ":A").Result()
+					/*keys, _ := c.client.Keys("record:*:" + record["host"] + ":A").Result()
 					if len(keys) > 0 {
 						for _, key := range keys {
 							record, e = c.client.HGetAll(key).Result()
@@ -147,7 +147,7 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 								log.Print(key, ": ", e)
 							}
 						}
-					}
+					}*/
 				default:
 					m.Rcode = dns.RcodeNameError
 					goto end
