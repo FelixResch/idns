@@ -74,7 +74,7 @@ type CustomHandler struct {
 
 func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 	for _, msg := range r.Question {
-		log.Print("Received query for ", msg.Name, " of type ", msg.Qtype, "(", msg.Qclass, ")")
+		log.Print("Received query for ", msg.Name, " of type ", dns.TypeToString[msg.Qtype], "(", dns.ClassToString[msg.Qclass], ")")
 		m := new(dns.Msg)
 		m.SetReply(r)
 		if msg.Name == "master." {
@@ -122,6 +122,21 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 						Weight: 1,
 					}
 					m.Answer = append(m.Answer, rr)
+					keys, _ := c.client.Keys("record:*:" + record["host"] + ":A").Result()
+					if len(keys) > 0 {
+						for _, key := range keys {
+							record, e = c.client.HGetAll(key).Result()
+							if e == nil {
+								arr := &dns.A{
+									Hdr: dns.RR_Header{Name: msg.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 0},
+									A: net.ParseIP(record["host"]),
+								}
+								m.Answer = append(m.Answer, arr)
+							} else {
+								log.Print(key, ": ", e)
+							}
+						}
+					}
 				default:
 					m.Rcode = dns.RcodeNameError
 					goto end
