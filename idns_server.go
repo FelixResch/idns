@@ -52,7 +52,12 @@ func main() {
 		serverIp: net.ParseIP(setting),
 	}
 
-	dns.ListenAndServe(setting + ":53", "udp", handler)
+	err = dns.ListenAndServe(setting + ":53", "udp", handler)
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
 
 	log.Println("iDNS is listening")
 
