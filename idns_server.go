@@ -154,6 +154,7 @@ func (c CustomHandler) ServeDNS (w dns.ResponseWriter, r *dns.Msg) {
 				}
 			}
 		}
+		log.Print("Sending ", m.String())
 		end:
 		w.WriteMsg(m)
 	}
